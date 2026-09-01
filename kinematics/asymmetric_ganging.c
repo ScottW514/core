@@ -46,13 +46,13 @@
 static on_report_options_ptr on_report_options;
 static on_settings_changed_ptr on_settings_changed;
 static stepper_get_ganged_ptr get_ganged_axes;
+static limits_get_state_ptr get_limits_state;
 
 #ifdef ASYMMETRIC_AUTO_SQUARE
 
 static axes_signals_t motor_disable = {0};
 
 static stepper_disable_motors_ptr disable_motors;
-static limits_get_state_ptr get_limits_state;
 static home_get_state_ptr get_home_state;
 static stepper_pulse_start_ptr pulse_start;
 
@@ -82,7 +82,7 @@ static limit_signals_t onGetLimitsState (void)
 {
     limit_signals_t limits = get_limits_state();
 
-    limits.min2.y = !!(limits.min.bits & GANGED_AXIS_BIT);
+    BIT_SET(limits.min2.bits, PRIMARY_AXIS_BIT, !!(limits.min.bits & GANGED_AXIS_BIT));
 
     return limits;
 }
@@ -133,6 +133,15 @@ static axes_signals_t onGetGangedAxes (bool auto_squared)
 }
 
 #else
+
+static limit_signals_t onGetLimitsState (void)
+{
+    limit_signals_t limits = get_limits_state();
+
+    BIT_SET(limits.min.bits, GANGED_AXIS_BIT, !!(limits.min.bits & PRIMARY_AXIS_BIT));
+
+    return limits;
+}
 
 static bool homing_cycle_validate (axes_signals_t cycle)
 {
@@ -355,10 +364,10 @@ void asymmetric_ganging_init (void)
     get_ganged_axes = hal.stepper.get_ganged;
     hal.stepper.get_ganged = onGetGangedAxes;
 
-#ifdef ASYMMETRIC_AUTO_SQUARE
-
     get_limits_state = hal.limits.get_state;
     hal.limits.get_state = onGetLimitsState;
+
+#ifdef ASYMMETRIC_AUTO_SQUARE
 
     get_home_state = hal.homing.get_state;
 //    hal.homing.get_state = onGetHomingState;

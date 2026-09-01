@@ -777,7 +777,7 @@ FLASHMEM void plan_feed_override (override_t feed_override, override_t rapid_ove
     if(rapid_override == 0)
         rapid_override = sys.override.rapid_rate;
     else
-        rapid_override = constrain(rapid_override, 5, 100);
+        rapid_override = constrain(rapid_override, RAPID_OVERRIDE_EXTRA_LOW, 100);
 
     if(feed_override != sys.override.feed_rate || rapid_override != sys.override.rapid_rate) {
 

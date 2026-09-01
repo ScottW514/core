@@ -1439,10 +1439,6 @@ inline static setting_id_t normalize_id (setting_id_t id)
         (id > Setting_AxisSettingsBase1 && id <= Setting_AxisSettingsMax1) ||
          (id > Setting_AxisSettingsBase2 && id <= Setting_AxisSettingsMax2))
         id -= id % AXIS_SETTINGS_INCREMENT;
-    else if(id > Setting_EncoderSettingsBase && id <= Setting_EncoderSettingsMax)
-        id = (setting_id_t)(Setting_EncoderSettingsBase + (id % ENCODER_SETTINGS_INCREMENT));
-    else if(id > Setting_ModbusTCPBase && id <= Setting_ModbusTCPMax)
-        id = (setting_id_t)(Setting_ModbusTCPBase + (id % MODBUS_TCP_SETTINGS_INCREMENT));
 
     return id;
 }
@@ -3119,9 +3115,6 @@ static inline const setting_detail_t *_setting_get_details (setting_id_t id, uin
                 if(details->settings[idx].group == Group_Axis0 && grbl.on_set_axis_setting_unit)
                     set_axis_unit(&details->settings[idx], grbl.on_set_axis_setting_unit(details->settings[idx].id, offset));
 
-                if(offset && details->iterator == NULL && offset >= (details->settings[idx].group == Group_Encoder0 ? encoders_get_count() : N_AXIS))
-                    return NULL;
-
                 if(set)
                     *set = details;
 
@@ -3140,23 +3133,23 @@ FLASHMEM const setting_detail_t *setting_get_details (setting_id_t id, setting_d
     if((detail = _setting_get_details(id, id - normalize_id(id), set)) == NULL) {
 
         uint_fast16_t idx, offset;
+        setting_id_t base_id;
         setting_details_t *details = settings_get_details();
 
         do {
-            if(details->normalize && (offset = id - details->normalize(id))) {
+            if(details->normalize && (base_id = details->normalize(id)) && base_id != id) {
 
+                offset = id - base_id;
                 id -= offset;
 
                 for(idx = 0; idx < details->n_settings; idx++) {
                     if(details->settings[idx].id == id && is_available(&details->settings[idx], offset)) {
-
-                        detail =  &details->settings[idx];
-
+                        detail = &details->settings[idx];
                         if(set)
                             *set = details;
+                        break;
                     }
                 }
-                break;
             }
         } while((details = details->next));
     }
@@ -3166,13 +3159,16 @@ FLASHMEM const setting_detail_t *setting_get_details (setting_id_t id, setting_d
 
 FLASHMEM const char *setting_get_description (setting_id_t id)
 {
-    const char *description = NULL;
+    static char *buf = NULL;
+    static size_t buflen = 0;
+
+    const char *description = NULL, *s;
 
     if(grbl.on_setting_get_description == NULL || (description = grbl.on_setting_get_description(id)) == NULL) {
 
         uint_fast16_t idx;
-        setting_details_t *settings = settings_get_details();
-        const setting_detail_t *setting = setting_get_details(id, NULL);
+        setting_details_t *settings;
+        const setting_detail_t *setting = setting_get_details(id, &settings);
 
         if(setting) do {
             if(settings->descriptions) {
@@ -3183,7 +3179,20 @@ FLASHMEM const char *setting_get_description (setting_id_t id)
                         if(setting->id == Setting_AxisStepsPerMM && axis_is_rotary(id - setting->id))
                             idx++;
   #endif
-                        description = settings->descriptions[idx].description;
+                        if((description = settings->descriptions[idx].description) && setting->flags.increment && (s = strchr(description, '?'))) {
+
+                            const char *v = uitoa((id - setting->id) / (setting->flags.subgroups ? setting->flags.increment : 1) + 1);
+                            size_t len = strlen(description) + strlen(v) + 1;
+
+                            if(len < buflen || (buf = realloc(buf, (buflen = len)))) {
+                                *buf = '\0';
+                                if(description != s)
+                                    strlcpy(buf, description, s - description + 1);
+                                strcat(buf, v);
+                                strcat(buf, s + 1);
+                                description = buf;
+                            }
+                        }
                     }
                 } while(idx && description == NULL);
             }

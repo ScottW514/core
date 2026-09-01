@@ -276,7 +276,7 @@
 #if HOMING_ACCEL_ENABLE
     extern void homing_accel_init (void);
     homing_accel_init();
-#endif;
+#endif
 
 // End third party plugin definitions.
 

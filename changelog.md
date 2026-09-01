@@ -1,5 +1,27 @@
 ## grblHAL changelog
 
+<a name="20260831">Build 20260831
+
+Core:
+
+* Improved settings description handling.
+
+* Removed some non-core settings iterator code.
+
+* Added 5% rapids override real time command (`0x98`).
+
+* Assymmetric ganging kinematics: fixed homing for ganged only motors. 
+
+Plugins:
+
+* Encoders, Networking (modbus client) and Spindle: moved settings iterator code locally.
+
+* Spindle: fixed NULL settings description that caused a validation failure.
+
+* Networking, httpd: "hardened" code.
+
+--- 
+
 <a name="20260827">Build 20260827
 
 Core:

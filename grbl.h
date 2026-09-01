@@ -42,7 +42,7 @@
 #else
 #define GRBL_VERSION "1.1f"
 #endif
-#define GRBL_BUILD 20260827
+#define GRBL_BUILD 20260831
 
 #define GRBL_URL "https://github.com/grblHAL"
 
@@ -133,7 +133,7 @@
 #define CMD_OVERRIDE_RAPID_RESET            0x95 //!< (149) Restores rapid override value to 100%.
 #define CMD_OVERRIDE_RAPID_MEDIUM           0x96 // (150)
 #define CMD_OVERRIDE_RAPID_LOW              0x97 // (151)
-// #define CMD_OVERRIDE_RAPID_EXTRA_LOW 0x98 // *NOT SUPPORTED*
+#define CMD_OVERRIDE_RAPID_EXTRA_LOW        0x98 // (152)
 #define CMD_OVERRIDE_SPINDLE_RESET 			0x99 // (153) Restores spindle override value to 100%.
 #define CMD_OVERRIDE_SPINDLE_COARSE_PLUS    0x9A // (154)
 #define CMD_OVERRIDE_SPINDLE_COARSE_MINUS   0x9B // (155)
@@ -186,20 +186,20 @@
 // Configure rapid, feed, and spindle override settings. These values define the max and min
 // allowable override values and the coarse and fine increments per command received. Please
 // note the allowable values in the descriptions following each define.
-#define DEFAULT_FEED_OVERRIDE           100 // 100%. Don't change this value.
+#define DEFAULT_FEED_OVERRIDE             100 // 100%. Don't change this value.
 #ifndef MAX_FEED_RATE_OVERRIDE
-#define MAX_FEED_RATE_OVERRIDE          200 // Percent of programmed feed rate (100-65535). Usually 120% or 200%
+#define MAX_FEED_RATE_OVERRIDE            200 // Percent of programmed feed rate (100-65535). Usually 120% or 200%
 #endif
 #ifndef MIN_FEED_RATE_OVERRIDE
-#define MIN_FEED_RATE_OVERRIDE           10 // Percent of programmed feed rate (1-100). Usually 50% or 1%
+#define MIN_FEED_RATE_OVERRIDE             10 // Percent of programmed feed rate (1-100). Usually 50% or 1%
 #endif
-#define FEED_OVERRIDE_COARSE_INCREMENT   10 // (1-99). Usually 10%.
-#define FEED_OVERRIDE_FINE_INCREMENT      1 // (1-99). Usually 1%.
+#define FEED_OVERRIDE_COARSE_INCREMENT     10 // (1-99). Usually 10%.
+#define FEED_OVERRIDE_FINE_INCREMENT        1 // (1-99). Usually 1%.
 
-#define DEFAULT_RAPID_OVERRIDE  100 // 100%. Don't change this value.
-#define RAPID_OVERRIDE_MEDIUM    50 // Percent of rapid (1-99). Usually 50%.
-#define RAPID_OVERRIDE_LOW       25 // Percent of rapid (1-99). Usually 25%.
-// #define RAPID_OVERRIDE_EXTRA_LOW 5 // *NOT SUPPORTED* Percent of rapid (1-99). Usually 5%.
+#define DEFAULT_RAPID_OVERRIDE            100 // 100%. Don't change this value.
+#define RAPID_OVERRIDE_MEDIUM              50 // Percent of rapid (1-99). Usually 50%.
+#define RAPID_OVERRIDE_LOW                 25 // Percent of rapid (1-99). Usually 25%.
+#define RAPID_OVERRIDE_EXTRA_LOW            5 // Percent of rapid (1-99). Usually 5%.
 
 #define DEFAULT_SPINDLE_RPM_OVERRIDE      100 // 100%. Don't change this value.
 #ifndef MAX_SPINDLE_RPM_OVERRIDE

@@ -668,6 +668,10 @@ bool protocol_exec_rt_system (void)
                 case CMD_OVERRIDE_RAPID_LOW:
                     new_r_override = RAPID_OVERRIDE_LOW;
                     break;
+
+                case CMD_OVERRIDE_RAPID_EXTRA_LOW:
+                    new_r_override = RAPID_OVERRIDE_EXTRA_LOW;
+                    break;
             }
 
             new_f_override = constrain(new_f_override, MIN_FEED_RATE_OVERRIDE, MAX_FEED_RATE_OVERRIDE);
@@ -946,6 +950,7 @@ ISR_CODE bool ISR_FUNC(protocol_enqueue_realtime_command)(uint8_t c)
         case CMD_OVERRIDE_RAPID_RESET:
         case CMD_OVERRIDE_RAPID_MEDIUM:
         case CMD_OVERRIDE_RAPID_LOW:
+        case CMD_OVERRIDE_RAPID_EXTRA_LOW:
             drop = true;
             enqueue_feed_override(c);
             break;
