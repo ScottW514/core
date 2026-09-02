@@ -3069,36 +3069,7 @@ FLASHMEM setting_group_t settings_normalize_group (setting_group_t group)
     return (group > Group_Axis0 && group < Group_Axis0 + N_AXIS) ? Group_Axis0 : group;
 }
 
-FLASHMEM bool settings_iterator (const setting_detail_t *setting, setting_output_ptr callback, void *data)
-{
-    bool ok = false;
-
-    if(setting->group == Group_Axis0) {
-
-        uint_fast8_t axis_idx = 0;
-
-        for(axis_idx = 0; axis_idx < system_n_axis(); axis_idx++) {
-
-            if(setting->is_available == NULL || setting->is_available(setting, axis_idx)) {
-
-                if(grbl.on_set_axis_setting_unit)
-                    set_axis_unit(setting, grbl.on_set_axis_setting_unit(setting->id, axis_idx));
-
-                if(!(ok = callback(setting, axis_idx, data)))
-                    break;
-            }
-        }
-    } else if(setting->flags.increment) {
-        setting_details_t *set;
-        if((setting = setting_get_details(setting->id, &set)) && set && set->iterator)
-            ok = set->iterator(setting, callback, data);
-    } else
-        ok = callback(setting, 0, data);
-
-    return ok;
-}
-
-static inline const setting_detail_t *_setting_get_details (setting_id_t id, uint_fast16_t offset, setting_details_t **set)
+static inline const setting_detail_t *__setting_get_details (setting_id_t id, uint_fast16_t offset, bool check_available, setting_details_t **set)
 {
     uint_fast16_t idx;
     setting_details_t *details = settings_get_details();
@@ -3110,7 +3081,7 @@ static inline const setting_detail_t *_setting_get_details (setting_id_t id, uin
 
     do {
         for(idx = 0; idx < details->n_settings; idx++) {
-            if(details->settings[idx].id == id && is_available(&details->settings[idx], offset)) {
+            if(details->settings[idx].id == id && (!check_available || is_available(&details->settings[idx], offset))) {
 
                 if(details->settings[idx].group == Group_Axis0 && grbl.on_set_axis_setting_unit)
                     set_axis_unit(&details->settings[idx], grbl.on_set_axis_setting_unit(details->settings[idx].id, offset));
@@ -3126,24 +3097,24 @@ static inline const setting_detail_t *_setting_get_details (setting_id_t id, uin
     return NULL;
 }
 
-FLASHMEM const setting_detail_t *setting_get_details (setting_id_t id, setting_details_t **set)
+FLASHMEM const setting_detail_t *_setting_get_details (setting_id_t id, bool check_available, setting_details_t **set)
 {
     const setting_detail_t *detail;
 
-    if((detail = _setting_get_details(id, id - normalize_id(id), set)) == NULL) {
+    if((detail = __setting_get_details(id, id - normalize_id(id), check_available, set)) == NULL) {
 
         uint_fast16_t idx, offset;
         setting_id_t base_id;
         setting_details_t *details = settings_get_details();
 
         do {
-            if(details->normalize && (base_id = details->normalize(id)) && base_id != id) {
+            if(details->normalize && (base_id = details->normalize(id))) {
 
                 offset = id - base_id;
                 id -= offset;
 
                 for(idx = 0; idx < details->n_settings; idx++) {
-                    if(details->settings[idx].id == id && is_available(&details->settings[idx], offset)) {
+                    if(details->settings[idx].id == id && (!check_available || is_available(&details->settings[idx], offset))) {
                         detail = &details->settings[idx];
                         if(set)
                             *set = details;
@@ -3155,6 +3126,40 @@ FLASHMEM const setting_detail_t *setting_get_details (setting_id_t id, setting_d
     }
 
     return detail;
+}
+
+FLASHMEM bool settings_iterator (const setting_detail_t *setting, setting_output_ptr callback, void *data)
+{
+    bool ok = false;
+
+    if(setting->group == Group_Axis0) {
+
+        uint_fast8_t axis_idx = 0;
+
+        for(axis_idx = 0; axis_idx < system_n_axis(); axis_idx++) {
+
+            if(is_available(setting, axis_idx)) {
+
+                if(grbl.on_set_axis_setting_unit)
+                    set_axis_unit(setting, grbl.on_set_axis_setting_unit(setting->id, axis_idx));
+
+                if(!(ok = callback(setting, axis_idx, data)))
+                    break;
+            }
+        }
+    } else if(setting->flags.increment) {
+        setting_details_t *set;
+        if((setting = _setting_get_details(setting->id, false, &set)) && set && set->iterator)
+            ok = set->iterator(setting, callback, data);
+    } else
+        ok = callback(setting, 0, data);
+
+    return ok;
+}
+
+FLASHMEM const setting_detail_t *setting_get_details (setting_id_t id, setting_details_t **set)
+{
+    return _setting_get_details(id, true, set);
 }
 
 FLASHMEM const char *setting_get_description (setting_id_t id)

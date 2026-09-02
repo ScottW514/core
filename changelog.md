@@ -1,5 +1,21 @@
 ## grblHAL changelog
 
+<a name="20260902">Build 20260902
+
+Core:
+
+* Improved settings iteration handling.
+
+Plugins:
+
+* Encoders, Keypad (macros), Networking (modbus client), Misc (eventout) and Spindle: improved settings iteration handling..
+
+* Plasma: fixed regression. Ref. issue [#1009](https://github.com/grblHAL/core/issues/1009).
+
+* Networking, httpd: "hardened" code again.
+
+---
+
 <a name="20260831">Build 20260831
 
 Core:

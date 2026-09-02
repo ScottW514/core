@@ -1091,7 +1091,21 @@ typedef void (*settings_changed_ptr)(settings_t *settings, settings_changed_flag
 typedef void (*driver_settings_load_ptr)(void);
 typedef void (*driver_settings_save_ptr)(void);
 typedef void (*driver_settings_restore_ptr)(void);
+
+/*! \brief Pointer to function to iterate over iterated settings.
+NOTES: The iterator should only iterate over available settings.
+If the callback returns false iteration should be terminated.
+\param settings pointer to \a setting_detail_t struct containing the setting data.
+\param callback a \a setting_output_ptr to be called for each iteration.
+\param data an optional pointer to data to be passed to the callback.
+\return \a false when false is returned by the callback else \a true.
+*/
 typedef bool (*driver_settings_iterator_ptr)(const setting_detail_t *setting, setting_output_ptr callback, void *data);
+
+/*! \brief Pointer to function to normalize iterated settings to the base settings id.
+\param id a \a setting_id_t enum value.
+\returns the base id if the id is recognized or 0 if not.
+*/
 typedef setting_id_t (*driver_settings_normalize_ptr)(setting_id_t id);
 
 typedef struct setting_details {
