@@ -548,6 +548,10 @@ static inline int ffs (int i)
     return idx;
 }
 
+#endif // _WIN32
+
+#if defined(_WIN32) || defined(__MSP432P401R__) || defined(PART_TM4C123GH6PM)
+
 static inline size_t strlcpy (char *dst, const char *src, size_t len)
 {
     const char *s = src;
@@ -567,7 +571,6 @@ static inline size_t strlcpy (char *dst, const char *src, size_t len)
     return s - src - 1;
 }
 
-#endif // _WIN32
-
+#endif // _WIN32 || __MSP432P401R__ || PART_TM4C123GH6PM
 
 #endif

@@ -245,7 +245,7 @@ typedef struct system {
     bool reset_pending;                     //!< Set when reset processing is underway.
     bool blocking_event;                    //!< Set when a blocking event that requires reset to clear is active.
     volatile bool steppers_deenergize;      //!< Set to true to deenergize stepperes
-    volatile system_flags_t flags;                   //!< Assorted state flags
+    volatile system_flags_t flags;          //!< Assorted state flags
     step_control_t step_control;            //!< Governs the step segment generator depending on system state.
     axes_signals_t homing_axis_lock;        //!< Locks axes when limits engage. Used as an axis motion mask in the stepper ISR.
     axes_signals_t homing;                  //!< Axes with homing enabled.
@@ -292,10 +292,11 @@ typedef const char *(*sys_help_ptr)(const char *command);
 typedef union {
     uint8_t flags;
     struct {
-        uint8_t noargs         :1, //!< System command does not handle arguments.
-                allow_blocking :1, //!< System command can be used when blocking event is active.
-                help_fn        :1,
-                unused         :5;
+        uint8_t noargs         :1, //!< Command does not handle arguments.
+                allow_blocking :1, //!< Command can be executed when blocking event is active.
+                help_fn        :1, //!< Command help is dynamic (output is via function call).
+                allow_mpg      :1, //!< Command can be executed from other streams than the current.
+                unused         :4;
     };
 } sys_command_flags_t;
 

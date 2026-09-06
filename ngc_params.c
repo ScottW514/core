@@ -1230,6 +1230,8 @@ FLASHMEM static status_code_t macro_modbus_msg (parameter_words_t args)
 
                 if(args.a && ngc_param_get(1 /* A word - first register value */, &tmpvar))
                     values[n_values++] = (uint16_t)tmpvar;
+                else
+                    return Status_GcodeValueOutOfRange;
 
                 if(!p->single_register) {
                     if(args.b && ngc_param_get(2 /* B word - second register value */, &tmpvar))
@@ -1237,8 +1239,15 @@ FLASHMEM static status_code_t macro_modbus_msg (parameter_words_t args)
                     if(args.c && ngc_param_get(3 /* C word - third register value */, &tmpvar))
                         values[n_values++] = (uint16_t)tmpvar;
                 }
-            } else if(args.x && ngc_param_get(24 /* X word - number of registers to read */, &tmpvar)) {
-                if((n_values = (uint16_t)tmpvar) > MODBUS_MAX_REGISTERS)
+                if(p->packed) {
+                    if(args.x && ngc_param_get(24 /* X word - number of bits to write */, &tmpvar)) {
+                        if((uint16_t)tmpvar > 16)
+                            return Status_GcodeValueOutOfRange;
+                        n_values = (uint16_t)tmpvar;
+                    }
+                }
+            } else if(args.x && ngc_param_get(24 /* X word - number of registers or bits to read */, &tmpvar)) {
+                if((n_values = (uint16_t)tmpvar) > MODBUS_MAX_REGISTERS * (p->packed ? 8 : 1))
                     return Status_GcodeValueOutOfRange;
             } else
                 n_values = 1;

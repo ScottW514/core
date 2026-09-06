@@ -2256,6 +2256,16 @@ Adds directory entries in $F and $F+ output to allow hierarchical navigation of 
 #endif
 ///@}
 
+/*! @name $720 - Settings_MPG_BaudRate
+Default baud rate for MPG stream.
+__NOTE:__ keep $720 options and stream_mpg_set_baud() in sync.
+*/
+///@{
+#if !defined DEFAULT_MPG_BAUD || defined __DOXYGEN__
+#define DEFAULT_MPG_BAUD 1 // 0 = 38400, 1 = 115200, 2 = 230400, 3 = 460800, 4 = 576000, 5 = 921600
+#endif
+///@}
+
 // Axis settings (Group_XAxis - Group_VAxis)
 
 /*! @name $10x - Setting_AxisStepsPerMM

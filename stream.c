@@ -399,7 +399,7 @@ FLASHMEM static bool stream_select (const io_stream_t *stream, bool add)
             break;
     }
 
-    if(hal.stream.type == StreamType_MPG) {
+    if(hal.stream.state.is_mpg) {
         stream_mpg_enable(false);
         mpg.flags.mpg_control = On;
     } else if(mpg_enable)
@@ -426,7 +426,7 @@ FLASHMEM static bool stream_select (const io_stream_t *stream, bool add)
         hal.stream.disable_rx(false);
 
     if(grbl.on_stream_changed)
-        grbl.on_stream_changed(hal.stream.type);
+        grbl.on_stream_changed();
 
     active_stream = stream;
 
@@ -541,7 +541,10 @@ FLASHMEM bool stream_close (io_stream_t const *stream)
                 if(details->streams[idx].release) {
                     if(stream->disable_rx)
                         stream->disable_rx(true);
-                    released = details->streams[idx].release(stream->instance);
+                    if((released = details->streams[idx].release(stream->instance))) {
+                        if(stream->file)
+                            vfs_close(stream->file);
+                    }
                 }
                 break;
             }
@@ -549,6 +552,20 @@ FLASHMEM bool stream_close (io_stream_t const *stream)
     } while((details = details->next));
 
     return released;
+}
+
+FLASHMEM void stream_set_file (vfs_file_t *file, stream_read_ptr read)
+{
+    if(!(hal.stream.file = file))
+        gc_state.file_stream = false;
+
+    if(read)
+        hal.stream.read = read;
+}
+
+FLASHMEM bool stream_is_file (void)
+{
+    return !!hal.stream.file;
 }
 
 // UART style streams
@@ -590,7 +607,7 @@ FLASHMEM static void mpg_gcode_mode_changed (void)
     if(mpg.on_gcode_mode_changed)
         mpg.on_gcode_mode_changed();
 
-    if(hal.stream.type != StreamType_MPG)
+    if(!hal.stream.state.is_mpg)
         report_gcode_modes(mpg.stream.write);
 }
 
@@ -652,8 +669,6 @@ FLASHMEM bool stream_mpg_register (const io_stream_t *stream, bool rx_only, stre
 
     memcpy(&mpg.stream, stream, sizeof(io_stream_t));
 
-    mpg.write_char = write_char;
-
     if(stream->write == NULL || rx_only) {
 
         mpg.stream.is_connected = stream_connected;
@@ -664,8 +679,8 @@ FLASHMEM bool stream_mpg_register (const io_stream_t *stream, bool rx_only, stre
         if(grbl.on_mpg_registered)
             grbl.on_mpg_registered(&mpg.stream, false);
 
-        if(mpg.write_char)
-            mpg.stream.set_enqueue_rt_handler(mpg.write_char);
+        if(write_char)
+            mpg.stream.set_enqueue_rt_handler(write_char);
 
         return true;
     }
@@ -677,8 +692,8 @@ FLASHMEM bool stream_mpg_register (const io_stream_t *stream, bool rx_only, stre
         mpg.flags.is_mpg_tx = On;
         mpg.flags.mpg_control = Off;
 
-        if(mpg.write_char)
-            mpg.stream.set_enqueue_rt_handler(mpg.write_char);
+        if(write_char)
+            mpg.stream.set_enqueue_rt_handler(write_char);
         else
             mpg.stream.disable_rx(true);
 
@@ -722,10 +737,17 @@ FLASHMEM bool stream_is_busy (bool is_connected)
     return is_connected || gc_state.file_run || !(state == STATE_IDLE || (state & (STATE_ALARM|STATE_ESTOP)));
 }
 
+FLASHMEM bool stream_mpg_set_baud (uint8_t baud)
+{
+    PROGMEM static const uint32_t rate[] = { 38400, 115200, 230400, 460800, 576000, 921600 }; // this array must match the $720 setting options
+
+    return mpg.stream.set_baud_rate && baud < (sizeof(rate) / sizeof(uint32_t)) && mpg.stream.set_baud_rate(rate[baud]);
+}
+
 FLASHMEM bool stream_mpg_enable (bool on)
 {
     static io_stream_t org_stream = {
-        .type = StreamType_Redirected
+        .type = StreamType_Null
     };
 
     if(mpg.stream.read == NULL)
@@ -738,14 +760,14 @@ FLASHMEM bool stream_mpg_enable (bool on)
     }
 
     if(on) {
-        if(org_stream.type == StreamType_Redirected) {
+        if(org_stream.type == StreamType_Null) {
             memcpy(&org_stream, &hal.stream, sizeof(io_stream_t));
             if(hal.stream.disable_rx)
                 hal.stream.disable_rx(true);
-            hal.stream.type = StreamType_MPG;
+            hal.stream.state.is_mpg = On;
             hal.stream.read = mpg.stream.read;
             mpg.stream.disable_rx(false);
-            mpg.stream.set_enqueue_rt_handler(hal.stream.set_enqueue_rt_handler(NULL));
+            mpg.write_char = mpg.stream.set_enqueue_rt_handler(hal.stream.set_enqueue_rt_handler(NULL));
             if(mpg.flags.is_mpg_tx) {
                 hal.stream.write = mpg.stream.write;
                 hal.stream.write_n = mpg.stream.write_n;
@@ -756,9 +778,9 @@ FLASHMEM bool stream_mpg_enable (bool on)
             hal.stream.cancel_read_buffer = mpg.stream.cancel_read_buffer;
             hal.stream.reset_read_buffer = mpg.stream.reset_read_buffer;
         }
-    } else if(org_stream.type != StreamType_Redirected) {
+    } else if(org_stream.type != StreamType_Null) {
         memcpy(&hal.stream, &org_stream, offsetof(io_stream_t, report));
-        org_stream.type = StreamType_Redirected;
+        org_stream.type = StreamType_Null;
         mpg.stream.report.override_counter = mpg.stream.report.wco_counter = 0;
         if(hal.stream.disable_rx)
             hal.stream.disable_rx(false);

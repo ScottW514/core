@@ -109,7 +109,7 @@ typedef const char *(*on_setting_get_description_ptr)(setting_id_t id);
 typedef void (*on_global_settings_restore_ptr)(void);
 typedef void (*on_realtime_report_ptr)(stream_write_ptr stream_write, report_tracking_flags_t report);
 typedef void (*on_unknown_feedback_message_ptr)(stream_write_ptr stream_write);
-typedef void (*on_stream_changed_ptr)(stream_type_t type);
+typedef void (*on_stream_changed_ptr)(void);
 typedef void (*on_mpg_registered_ptr)(io_stream_t *stream, bool tx_capable);
 typedef bool (*on_laser_ppi_enable_ptr)(uint_fast16_t ppi, uint_fast16_t pulse_length);
 typedef void (*on_homing_rate_set_ptr)(axes_signals_t axes, coord_data_t *feedrate, homing_mode_t mode);

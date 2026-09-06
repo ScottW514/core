@@ -81,13 +81,9 @@ Helper functions for saving away and restoring a stream input buffer. _Not refer
 
 typedef enum {
     StreamType_Serial = 0,
-    StreamType_MPG,
     StreamType_Bluetooth,
     StreamType_Telnet,
     StreamType_WebSocket,
-    StreamType_File,
-    StreamType_SDCard = StreamType_File, // deprecated, use StreamType_File instead
-    StreamType_Redirected,
     StreamType_Null
 } stream_type_t;
 
@@ -355,7 +351,7 @@ typedef union {
                 utf8              :1, //!< Set when stream is in UTF8 mode.
                 eof               :1, //!< Set when a file stream reaches end-of-file.
                 m98_macro_prescan :1, //!< Set when prescanning gcode for M98 macro definitions.
-                unused            :1;
+                is_mpg            :1; //!< Set when stream is redirected to MPG.
     };
 } io_stream_state_t;
 
@@ -402,12 +398,12 @@ typedef bool (*stream_release_ptr)(uint8_t instance);
 typedef const io_stream_status_t *(*stream_get_status_ptr)(uint8_t instance);
 
 struct io_stream_properties {
-    stream_type_t type;                                     //!< Type of stream.
-    uint8_t instance;                                       //!< Instance of stream type, starts from 0.
+    stream_type_t type;                 //!< Type of stream.
+    uint8_t instance;                   //!< Instance of stream type, starts from 0.
     io_stream_flags_t flags;
     stream_claim_ptr claim;
     stream_release_ptr release;
-    stream_get_status_ptr get_status;                       //!< Optional handler for getting stream status, for UART streams only
+    stream_get_status_ptr get_status;   //!< Optional handler for getting stream status, for UART streams only
 };
 
 typedef bool (*stream_enumerate_callback_ptr)(io_stream_properties_t const *properties, void *data);
@@ -477,6 +473,8 @@ int32_t stream_get_null (void);
 
 bool stream_mpg_register (const io_stream_t *stream, bool rx_only, stream_write_char_ptr write_char);
 
+bool stream_mpg_set_baud (uint8_t baud);
+
 /*! \brief Function for enabling/disabling input from a secondary input stream.
 \param on \a true if switching input to mpg stream, \a false when restoring original input.
 \returns \a true when succsessful, \a false otherwise.
@@ -524,6 +522,9 @@ void stream_usb_linestate_changed (uint8_t instance, serial_linestate_t state);
 io_stream_t const *stream_open_instance (uint8_t instance, uint32_t baud_rate, stream_write_char_ptr rx_handler, const char *description);
 bool stream_close (io_stream_t const *stream);
 bool stream_set_description (const io_stream_t *stream, const char *description);
+
+void stream_set_file (vfs_file_t *file, stream_read_ptr read);
+bool stream_is_file (void);
 
 void debug_printf(const char *fmt, ...);
 

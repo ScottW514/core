@@ -408,7 +408,20 @@ PROGMEM static const settings_t defaults = {
 
 static bool group_is_available (const setting_group_detail_t *group)
 {
-    return group->id < Group_XAxis || group->id > Group_WAxis || group->id < Group_Axis0 + system_n_axis();
+    bool available;
+
+    switch(group->id) {
+
+        case Group_MPG:
+            available = hal.driver_cap.mpg_mode;
+            break;
+
+        default:
+            available = group->id < Group_XAxis || group->id > Group_WAxis || group->id < Group_Axis0 + system_n_axis();
+            break;
+    }
+
+    return available;
 }
 
 PROGMEM static const setting_group_detail_t setting_group_detail [] = {
@@ -427,6 +440,7 @@ PROGMEM static const setting_group_detail_t setting_group_detail [] = {
      { Group_Root, Group_Jogging, "Jogging"},
      { Group_Root, Group_Stepper, "Stepper" },
      { Group_Root, Group_MotorDriver, "Stepper driver" },
+     { Group_Root, Group_MPG, "MPG/Pendant", group_is_available },
      { Group_Root, Group_Axis, "Axis", group_is_available },
      { Group_Axis, Group_XAxis, "X-axis", group_is_available },
      { Group_Axis, Group_YAxis, "Y-axis", group_is_available },
@@ -1233,6 +1247,16 @@ static status_code_t set_rotary_options (setting_id_t id, uint_fast16_t int_valu
 }
 #endif
 
+static status_code_t mpg_set_baud (setting_id_t id, uint_fast16_t int_value)
+{
+    status_code_t status;
+
+    if((status = stream_mpg_set_baud((uint8_t)int_value) ? Status_OK : Status_SettingValueOutOfRange) == Status_OK)
+        settings.mpg_baud_rate = (uint8_t)int_value;
+
+    return status;
+}
+
 static status_code_t set_sleep_enable (setting_id_t id, uint_fast16_t int_value)
 {
     settings.flags.sleep_enable = int_value != 0;
@@ -1866,6 +1890,10 @@ FLASHMEM static uint32_t get_int (setting_id_t id)
             value = settings.flags.rotary_fix_enable | (settings.flags.revert_metric_conversion << 1);
             break;
 #endif
+        case Settings_MPG_BaudRate:
+            value = settings.mpg_baud_rate;
+            break;
+
         default:
             break;
     }
@@ -2207,6 +2235,10 @@ FLASHMEM static bool is_setting_available (const setting_detail_t *setting, uint
             available = hal.motor_fault_cap.a.mask != 0;
             break;
 
+        case Settings_MPG_BaudRate:
+            available = hal.driver_cap.mpg_mode;
+            break;
+
         default:
             break;
     }
@@ -2479,6 +2511,7 @@ PROGMEM static const setting_detail_t setting_detail[] = {
 #if N_AXIS > 3
      { Setting_RotaryOptions, Group_General, "Rotary options", NULL, Format_XBitfield, "Fix feedrate,Revert metric conversion", NULL, NULL, Setting_IsExpandedFn, set_rotary_options, get_int, NULL },
 #endif
+     { Settings_MPG_BaudRate, Group_MPG, "MPG baud rate", NULL, Format_RadioButtons, "38400,115200,230400,460800,576000,921600", NULL, NULL, Setting_NonCoreFn, mpg_set_baud, get_int, is_setting_available },
 };
 
 PROGMEM static const setting_descr_t setting_descr[] = {
@@ -3805,10 +3838,15 @@ FLASHMEM void settings_init (void)
             }
         }
 
+        if(settings.version.build <= 260903)
+            settings.mpg_baud_rate = DEFAULT_MPG_BAUD;
+
         settings.version.build = (GRBL_BUILD - 20000000UL);
 
         global_settings.save();
     }
+
+    stream_mpg_set_baud(settings.mpg_baud_rate);
 
     global_settings.on_changed = grbl.on_settings_changed;
 

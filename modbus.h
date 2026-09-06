@@ -31,7 +31,7 @@
 #include "stream.h"
 
 #ifndef MODBUS_MAX_ADU_SIZE
-#define MODBUS_MAX_ADU_SIZE 12
+#define MODBUS_MAX_ADU_SIZE 15
 #endif
 #ifndef MODBUS_QUEUE_LENGTH
 #define MODBUS_QUEUE_LENGTH 8
@@ -135,6 +135,7 @@ typedef struct {
     modbus_function_t function;
     bool is_write;
     bool single_register;
+    bool packed;
 } modbus_function_properties_t;
 
 typedef bool (*modbus_is_up_ptr)(void);

@@ -1,5 +1,33 @@
 ## grblHAL changelog
 
+<a name="20260905">Build 20260905
+
+Core:
+
+* Refactored stream handling to get rid of some problematic stream types, may cause some 3rd party plugins to fail compilation.
+
+* Added setting $720 for pendant baud rate, defaults to 1 (115200 baud). Reserved 8 setting ids (722 - 729) for MPG/Pendant plugins.
+Ref. discussion [#1000](https://github.com/grblHAL/core/discussions/1000).
+
+* Fixed `G65P7` handling of bit packed modbus messages, funtions 1, 2 and 15. Ref issue [#1011](https://github.com/grblHAL/core/issues/1011).
+> [!NOTE]
+> Only tested against a simulator of my own making, I do not have a certified device to test against.
+
+Drivers:
+
+* ESP32: reorganized networking code for readability.
+
+Plugins:
+
+* Keypad, UART mode: updated to share UART stream with MPG/pendant plugins that registers itself with the core.
+
+* Networking, WizNet: added 1ms poll of interface chip as a potential workaround for occasionally lost IRQs.
+Ref. issue [#24](https://github.com/grblHAL/Plugin_networking/issues/24).
+
+* Embroidery, Bluetooth, Networking, SD card and WebUI: updated for refactored stream handling.
+
+---
+
 <a name="20260902">Build 20260902
 
 Core:
